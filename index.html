@@ -842,3 +842,12 @@ if (localStorage.getItem('darkMode') === 'true') {
 .dark-mode { background: #1a1a1a !important; color: #e0e0e0 !important; }
 .dark-mode .container { background: #2a2a2a !important; }
 </style>
+<script>
+// API integration ready
+const API = {
+    async fetch(url, options = {}) {
+        const response = await fetch(url, options);
+        return response.json();
+    }
+};
+</script>
