@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diff Checker | Compare Texts Side by Side</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
@@ -26,8 +27,17 @@
                     <input type="checkbox" id="caseInsensitive">
                     <span>Case insensitive</span>
                 </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="charDiff">
+                    <span>🔤 Char-level diff</span>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="syntaxHighlight">
+                    <span>🎨 Syntax highlight</span>
+                </label>
             </div>
             <div class="actions">
+                <button onclick="toggleTheme()" class="icon-btn" id="themeBtn" title="Toggle theme (Ctrl+T)">🌙 Theme</button>
                 <button onclick="swapSides()" class="icon-btn" title="Swap sides (Ctrl+⇄)">⇄ Swap</button>
                 <button onclick="clearAll()" class="icon-btn danger" title="Clear all (Ctrl+Del)">🗑 Clear</button>
             </div>
@@ -89,11 +99,41 @@
             <p class="shortcuts">
                 <kbd>Ctrl+Enter</kbd> Compare · 
                 <kbd>Ctrl+Del</kbd> Clear · 
-                <kbd>Ctrl+S</kbd> Export
+                <kbd>Ctrl+S</kbd> Export · 
+                <kbd>Ctrl+T</kbd> Theme ·
+                <kbd>?</kbd> Help
             </p>
         </footer>
+        
+        <div id="helpModal" class="modal">
+            <div class="modal-content">
+                <span class="modal-close" onclick="closeHelp()">&times;</span>
+                <h2>⌨️ Keyboard Shortcuts</h2>
+                <div class="shortcuts-grid">
+                    <div><kbd>Ctrl</kbd> + <kbd>Enter</kbd></div><div>Compare</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>Delete</kbd></div><div>Clear all</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>S</kbd></div><div>Export</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>T</kbd></div><div>Toggle theme</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>C</kbd></div><div>Copy result</div>
+                    <div><kbd>?</kbd></div><div>Show this help</div>
+                    <div><kbd>Esc</kbd></div><div>Close help / clear</div>
+                </div>
+                <h3>🆕 New Features</h3>
+                <ul>
+                    <li><strong>🔤 Char-level diff:</strong> Highlights exact character changes within lines</li>
+                    <li><strong>🎨 Syntax highlight:</strong> Auto-detects and highlights code</li>
+                    <li><strong>🌙 Theme toggle:</strong> Switch between dark and light modes</li>
+                </ul>
+            </div>
+        </div>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
     <script src="app.js"></script>
     <script>
         // Register service worker for PWA

@@ -2,12 +2,103 @@
 
 let leftContent = '';
 let rightContent = '';
+let currentTheme = localStorage.getItem('diff-theme') || 'dark';
+let helpModalOpen = false;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadFromStorage();
     updateStats();
+    applyTheme(currentTheme, false);
 });
+
+// Theme toggle function
+function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(currentTheme, true);
+    localStorage.setItem('diff-theme', currentTheme);
+    showToast(`${currentTheme === 'dark' ? '🌙' : '☀️'} ${currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)} mode enabled`);
+}
+
+function applyTheme(theme, animate) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const themeBtn = document.getElementById('themeBtn');
+    const hljsTheme = document.getElementById('hljs-theme');
+    
+    if (themeBtn) {
+        themeBtn.innerHTML = theme === 'dark' ? '🌙 Theme' : '☀️ Theme';
+    }
+    
+    if (hljsTheme) {
+        hljsTheme.href = theme === 'dark' 
+            ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css'
+            : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css';
+    }
+    
+    if (animate) {
+        document.body.style.transition = 'background 0.3s ease, color 0.3s ease';
+        setTimeout(() => {
+            document.body.style.transition = '';
+        }, 300);
+    }
+}
+
+// Help modal
+function showHelp() {
+    const modal = document.getElementById('helpModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        helpModalOpen = true;
+    }
+}
+
+function closeHelp() {
+    const modal = document.getElementById('helpModal');
+    if (modal) {
+        modal.style.display = 'none';
+        helpModalOpen = false;
+    }
+}
+
+// Calculate character-level diff
+function getCharDiff(left, right) {
+    if (!left || !right || left === right) return null;
+    
+    const maxLen = Math.max(left.length, right.length);
+    let result = { left: [], right: [] };
+    let leftBuf = '';
+    let rightBuf = '';
+    
+    for (let i = 0; i < maxLen; i++) {
+        const l = left[i] || '';
+        const r = right[i] || '';
+        
+        if (l === r) {
+            if (leftBuf) { result.left.push({ text: leftBuf, changed: true }); leftBuf = ''; }
+            if (rightBuf) { result.right.push({ text: rightBuf, changed: true }); rightBuf = ''; }
+            result.left.push({ text: l, changed: false });
+            result.right.push({ text: r, changed: false });
+        } else {
+            leftBuf += l;
+            rightBuf += r;
+        }
+    }
+    
+    if (leftBuf) result.left.push({ text: leftBuf, changed: true });
+    if (rightBuf) result.right.push({ text: rightBuf, changed: true });
+    
+    return result;
+}
+
+function renderCharDiff(charDiff) {
+    if (!charDiff) return null;
+    
+    const render = (parts) => parts.map(part => 
+        part.changed ? `<span class="char-diff">${escapeHtml(part.text)}</span>` : escapeHtml(part.text)
+    ).join('');
+    
+    return { left: render(charDiff.left), right: render(charDiff.right) };
+}
 
 function process() {
     const leftInput = document.getElementById('leftInput');
@@ -88,6 +179,22 @@ function calculateDiff(left, right) {
 function displayDiff(diffs, container) {
     if (!container) return;
     
+    const charDiffEnabled = document.getElementById('charDiff')?.checked || false;
+    const syntaxHighlightEnabled = document.getElementById('syntaxHighlight')?.checked || false;
+    const leftInput = document.getElementById('leftInput');
+    const rightInput = document.getElementById('rightInput');
+    
+    // Detect language
+    let language = null;
+    if (syntaxHighlightEnabled && leftInput && rightInput) {
+        const combined = leftInput.value + rightInput.value;
+        if (combined.includes('function') || combined.includes('const ') || combined.includes('let ')) language = 'javascript';
+        else if (combined.includes('def ') || combined.includes('import ') && combined.includes('print(')) language = 'python';
+        else if (combined.includes('<!DOCTYPE') || combined.includes('<html')) language = 'xml';
+        else if (combined.includes('{') && combined.includes('"')) language = 'json';
+        else if (combined.includes('{') && combined.includes(';')) language = 'css';
+    }
+    
     let html = '<div class="diff-view">';
     html += '<div class="diff-header"><span>Original</span><span>Modified</span></div>';
     html += '<div class="diff-content">';
@@ -97,16 +204,53 @@ function displayDiff(diffs, container) {
                          diff.status === 'added' ? 'diff-added' :
                          diff.status === 'removed' ? 'diff-removed' : 'diff-modified';
         
+        let leftContent = escapeHtml(diff.left);
+        let rightContent = escapeHtml(diff.right);
+        
+        // Apply character-level diff
+        if (charDiffEnabled && diff.status === 'modified') {
+            const charDiff = getCharDiff(diff.left, diff.right);
+            const rendered = renderCharDiff(charDiff);
+            if (rendered) {
+                leftContent = rendered.left;
+                rightContent = rendered.right;
+            }
+        }
+        
+        // Apply syntax highlighting
+        if (syntaxHighlightEnabled && language && diff.status === 'equal') {
+            leftContent = highlightCode(diff.left, language);
+            rightContent = highlightCode(diff.right, language);
+        }
+        
         html += `<div class="diff-line ${lineClass}">`;
-        html += `<div class="line-num">${diff.lineNum}</div>`;
-        html += `<div class="line-content left">${escapeHtml(diff.left)}</div>`;
-        html += `<div class="line-num">${diff.lineNum}</div>`;
-        html += `<div class="line-content right">${escapeHtml(diff.right)}</div>`;
+        html += `<div class="line-num" title="Click to copy" onclick="copyLine('${escapeHtml(diff.left).replace(/'/g, "\\'")}')">${diff.lineNum}</div>`;
+        html += `<div class="line-content left ${syntaxHighlightEnabled && language ? 'hljs' : ''}">${leftContent || '<span class="empty-line">(empty)</span>'}</div>`;
+        html += `<div class="line-num" title="Click to copy" onclick="copyLine('${escapeHtml(diff.right).replace(/'/g, "\\'")}')">${diff.lineNum}</div>`;
+        html += `<div class="line-content right ${syntaxHighlightEnabled && language ? 'hljs' : ''}">${rightContent || '<span class="empty-line">(empty)</span>'}</div>`;
         html += '</div>';
     });
     
     html += '</div></div>';
     container.innerHTML = html;
+}
+
+function highlightCode(code, language) {
+    if (!code || !window.hljs) return escapeHtml(code);
+    try {
+        const result = window.hljs.highlight(code, { language, ignoreIllegals: true });
+        return result.value;
+    } catch (e) {
+        return escapeHtml(code);
+    }
+}
+
+function copyLine(text) {
+    if (text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Line copied!');
+        });
+    }
 }
 
 function displayStats(diff, container) {
@@ -331,17 +475,39 @@ function handleFileUpload(event, side) {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
+    // Don't trigger shortcuts when typing in textareas
+    if (e.target.tagName === 'TEXTAREA' && !e.ctrlKey && !e.metaKey) return;
+    
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         process();
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Delete') {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'Delete' || e.key === 'Backspace' && e.shiftKey)) {
         e.preventDefault();
         clearAll();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         exportDiff('txt');
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+        e.preventDefault();
+        toggleTheme();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !window.getSelection().toString()) {
+        e.preventDefault();
+        copyDiff();
+    }
+    if (e.key === '?' && !e.shiftKey) {
+        e.preventDefault();
+        showHelp();
+    }
+    if (e.key === 'Escape') {
+        if (helpModalOpen) {
+            closeHelp();
+        } else {
+            clearAll();
+        }
     }
 });
 
@@ -357,6 +523,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const rightInput = document.getElementById('rightInput');
     const leftFile = document.getElementById('leftFile');
     const rightFile = document.getElementById('rightFile');
+    const charDiffCheckbox = document.getElementById('charDiff');
+    const syntaxHighlightCheckbox = document.getElementById('syntaxHighlight');
     
     if (leftInput) {
         leftInput.addEventListener('input', () => {
@@ -378,6 +546,23 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (rightFile) {
         rightFile.addEventListener('change', (e) => handleFileUpload(e, 'right'));
+    }
+    
+    // Re-run diff when toggle options change
+    if (charDiffCheckbox) {
+        charDiffCheckbox.addEventListener('change', () => {
+            localStorage.setItem('diff-chardiff', charDiffCheckbox.checked);
+            if (leftInput?.value && rightInput?.value) process();
+        });
+        charDiffCheckbox.checked = localStorage.getItem('diff-chardiff') === 'true';
+    }
+    
+    if (syntaxHighlightCheckbox) {
+        syntaxHighlightCheckbox.addEventListener('change', () => {
+            localStorage.setItem('diff-syntax', syntaxHighlightCheckbox.checked);
+            if (leftInput?.value && rightInput?.value) process();
+        });
+        syntaxHighlightCheckbox.checked = localStorage.getItem('diff-syntax') === 'true';
     }
     
     // Load from hash if present
