@@ -37,6 +37,10 @@
                 </label>
             </div>
             <div class="actions">
+                <select id="sessionDropdown" onchange="if(this.value) loadSession(this.value)" class="session-select" title="Load saved session">
+                    <option value="">📂 Sessions...</option>
+                </select>
+                <button onclick="saveSession()" class="icon-btn" title="Save current diff (Ctrl+Shift+S)">💾 Save</button>
                 <button onclick="toggleTheme()" class="icon-btn" id="themeBtn" title="Toggle theme (Ctrl+T)">🌙 Theme</button>
                 <button onclick="swapSides()" class="icon-btn" title="Swap sides (Ctrl+⇄)">⇄ Swap</button>
                 <button onclick="clearAll()" class="icon-btn danger" title="Clear all (Ctrl+Del)">🗑 Clear</button>
@@ -120,10 +124,22 @@
                 </div>
                 <h3>🆕 New Features</h3>
                 <ul>
+                    <li><strong>💾 Session Management:</strong> Save and load multiple diff sessions</li>
                     <li><strong>🔤 Char-level diff:</strong> Highlights exact character changes within lines</li>
                     <li><strong>🎨 Syntax highlight:</strong> Auto-detects and highlights code</li>
                     <li><strong>🌙 Theme toggle:</strong> Switch between dark and light modes</li>
                 </ul>
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <div class="shortcuts-grid">
+                    <div><kbd>Ctrl</kbd> + <kbd>Enter</kbd></div><div>Compare</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></div><div>Save session</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>Delete</kbd></div><div>Clear all</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>S</kbd></div><div>Export</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>T</kbd></div><div>Toggle theme</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>C</kbd></div><div>Copy result</div>
+                    <div><kbd>?</kbd></div><div>Show this help</div>
+                    <div><kbd>Esc</kbd></div><div>Close help / clear</div>
+                </div>
             </div>
         </div>
     </div>

@@ -445,6 +445,87 @@ function loadFromHash() {
     }
 }
 
+// Session Management - Save/Load diff sessions
+function saveSession() {
+    const leftInput = document.getElementById('leftInput');
+    const rightInput = document.getElementById('rightInput');
+    
+    if (!leftInput || !rightInput) return;
+    
+    const name = prompt('Enter session name:');
+    if (!name) return;
+    
+    const sessions = JSON.parse(localStorage.getItem('diff-sessions') || '[]');
+    const session = {
+        id: Date.now(),
+        name: name,
+        left: leftInput.value,
+        right: rightInput.value,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Remove existing session with same name
+    const existingIndex = sessions.findIndex(s => s.name === name);
+    if (existingIndex >= 0) sessions.splice(existingIndex, 1);
+    
+    sessions.unshift(session);
+    // Keep only last 20 sessions
+    if (sessions.length > 20) sessions.pop();
+    
+    localStorage.setItem('diff-sessions', JSON.stringify(sessions));
+    showToast(`💾 Saved session: ${name}`);
+    updateSessionDropdown();
+}
+
+function loadSession(sessionId) {
+    const sessions = JSON.parse(localStorage.getItem('diff-sessions') || '[]');
+    const session = sessions.find(s => s.id == sessionId);
+    
+    if (!session) return;
+    
+    const leftInput = document.getElementById('leftInput');
+    const rightInput = document.getElementById('rightInput');
+    
+    if (leftInput) leftInput.value = session.left || '';
+    if (rightInput) rightInput.value = session.right || '';
+    
+    localStorage.setItem('diff-left', session.left || '');
+    localStorage.setItem('diff-right', session.right || '');
+    
+    updateStats();
+    process();
+    showToast(`📂 Loaded session: ${session.name}`);
+}
+
+function deleteSession(sessionId, event) {
+    event.stopPropagation();
+    const sessions = JSON.parse(localStorage.getItem('diff-sessions') || '[]');
+    const filtered = sessions.filter(s => s.id != sessionId);
+    localStorage.setItem('diff-sessions', JSON.stringify(filtered));
+    updateSessionDropdown();
+    showToast('🗑️ Session deleted');
+}
+
+function updateSessionDropdown() {
+    const sessions = JSON.parse(localStorage.getItem('diff-sessions') || '[]');
+    const dropdown = document.getElementById('sessionDropdown');
+    
+    if (!dropdown) return;
+    
+    if (sessions.length === 0) {
+        dropdown.innerHTML = '<option value="">📂 No saved sessions</option>';
+        return;
+    }
+    
+    let html = '<option value="">📂 Load saved session...</option>';
+    sessions.forEach(session => {
+        const date = new Date(session.timestamp).toLocaleDateString();
+        const leftPreview = session.left.slice(0, 30).replace(/\n/g, ' ') || '(empty)';
+        html += `<option value="${session.id}">${session.name} (${date}) - ${leftPreview}...</option>`;
+    });
+    dropdown.innerHTML = html;
+}
+
 function showToast(message) {
     const existing = document.querySelector('.toast-message');
     if (existing) existing.remove();
@@ -489,6 +570,10 @@ document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         exportDiff('txt');
+    }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        saveSession();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 't') {
         e.preventDefault();
@@ -567,4 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load from hash if present
     loadFromHash();
+    
+    // Initialize session dropdown
+    updateSessionDropdown();
 });
