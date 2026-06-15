@@ -13,6 +13,7 @@ A beautiful, fast side-by-side text comparison tool built with vanilla JavaScrip
 - **Keyboard shortcuts** - Power user friendly
 - **LocalStorage persistence** - Your text survives page refresh
 - **PWA support** - Install as an app
+- **🎓 Interactive Tutorial** - Guided walkthrough for new users
 
 ## 🚀 Try it
 
@@ -34,11 +35,16 @@ python3 -m http.server 8000
 | `Ctrl+Enter` | Compare texts |
 | `Ctrl+Delete` | Clear all inputs |
 | `Ctrl+S` | Export as text |
+| `Ctrl+T` | Toggle theme |
+| `Ctrl+Shift+S` | Save session |
+| `?` | Show help |
 
 ## 📝 Options
 
 - **Ignore whitespace** - Treats multiple spaces as single space
 - **Case insensitive** - A = a in comparisons
+- **Char-level diff** - Highlight exact character changes within lines
+- **Syntax highlight** - Auto-detect and highlight code
 
 ## 📊 Stats Shown
 
@@ -56,6 +62,24 @@ python3 -m http.server 8000
 | 🔴 Red | Removed content |
 | 🟡 Yellow | Modified content |
 | 🟣 Purple | Identical content |
+
+## 🎓 Tutorial
+
+New users get an interactive guided tour on their first visit! The tutorial highlights:
+- How to paste original and modified text
+- Available compare options
+- Understanding the results
+- Export and sharing features
+- Keyboard shortcuts
+
+Click the **"🎓 Tutorial"** button in the bottom-right corner anytime to restart it.
+
+## 💾 Session Management
+
+Save and load multiple diff sessions:
+- Save current comparison with a custom name
+- Quickly switch between different diffs
+- Automatically keeps last 20 sessions
 
 ## 🐛 Found a bug?
 

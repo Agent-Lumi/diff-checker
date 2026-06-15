@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diff Checker | Compare Texts Side by Side</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="tutorial.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
@@ -109,6 +110,10 @@
             </p>
         </footer>
         
+        <button class="restart-tutorial-btn" onclick="Tutorial.restart()" title="Restart tutorial">
+            🎓 Tutorial
+        </button>
+        
         <div id="helpModal" class="modal">
             <div class="modal-content">
                 <span class="modal-close" onclick="closeHelp()">&times;</span>
@@ -151,6 +156,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
     <script src="app.js"></script>
+    <script src="tutorial.js"></script>
     <script>
         // Register service worker for PWA
         if ('serviceWorker' in navigator) {
