@@ -4,12 +4,14 @@ let leftContent = '';
 let rightContent = '';
 let currentTheme = localStorage.getItem('diff-theme') || 'dark';
 let helpModalOpen = false;
+let currentViewMode = localStorage.getItem('diff-view-mode') || 'side'; // 'side' or 'inline'
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadFromStorage();
     updateStats();
     applyTheme(currentTheme, false);
+    initializeViewMode();
 });
 
 // Theme toggle function
@@ -100,6 +102,158 @@ function renderCharDiff(charDiff) {
     return { left: render(charDiff.left), right: render(charDiff.right) };
 }
 
+// Initialize view mode from localStorage
+function initializeViewMode() {
+    currentViewMode = localStorage.getItem('diff-view-mode') || 'side';
+    updateViewModeUI();
+}
+
+// Toggle between side-by-side and inline diff view
+function toggleDiffView(mode) {
+    currentViewMode = mode;
+    localStorage.setItem('diff-view-mode', mode);
+    updateViewModeUI();
+    
+    // Re-render if we have content
+    const leftInput = document.getElementById('leftInput');
+    const rightInput = document.getElementById('rightInput');
+    if (leftInput?.value || rightInput?.value) {
+        process();
+    }
+    
+    showToast(`${mode === 'side' ? '📑 Side-by-side' : '📃 Inline'} view enabled`);
+}
+
+// Update the UI to reflect current view mode
+function updateViewModeUI() {
+    const sideBtn = document.getElementById('sideBySideBtn');
+    const inlineBtn = document.getElementById('inlineBtn');
+    const diffOutput = document.getElementById('diffOutput');
+    const inlineDiffOutput = document.getElementById('inlineDiffOutput');
+    
+    if (sideBtn && inlineBtn) {
+        if (currentViewMode === 'side') {
+            sideBtn.classList.add('active');
+            inlineBtn.classList.remove('active');
+        } else {
+            sideBtn.classList.remove('active');
+            inlineBtn.classList.add('active');
+        }
+    }
+    
+    // Toggle visibility of diff outputs
+    if (diffOutput && inlineDiffOutput) {
+        if (currentViewMode === 'side') {
+            diffOutput.style.display = 'block';
+            inlineDiffOutput.style.display = 'none';
+        } else {
+            diffOutput.style.display = 'none';
+            inlineDiffOutput.style.display = 'block';
+        }
+    }
+}
+
+// Display diff in inline mode
+function displayInlineDiff(diffs, container) {
+    if (!container) return;
+    
+    const charDiffEnabled = document.getElementById('charDiff')?.checked || false;
+    const syntaxHighlightEnabled = document.getElementById('syntaxHighlight')?.checked || false;
+    const leftInput = document.getElementById('leftInput');
+    const rightInput = document.getElementById('rightInput');
+    
+    // Detect language
+    let language = null;
+    if (syntaxHighlightEnabled && leftInput && rightInput) {
+        const combined = leftInput.value + rightInput.value;
+        if (combined.includes('function') || combined.includes('const ') || combined.includes('let ')) language = 'javascript';
+        else if (combined.includes('def ') || combined.includes('import ') && combined.includes('print(')) language = 'python';
+        else if (combined.includes('<!DOCTYPE') || combined.includes('<html')) language = 'xml';
+        else if (combined.includes('{') && combined.includes('"')) language = 'json';
+        else if (combined.includes('{') && combined.includes(';')) language = 'css';
+    }
+    
+    let html = '<div class="inline-diff-header">';
+    html += '<div class="line-num">Line</div>';
+    html += '<div class="inline-diff-header-content">Content</div>';
+    html += '</div>';
+    
+    let lineCounter = 0;
+    
+    diffs.forEach(diff => {
+        const lineClass = diff.status === 'equal' ? 'equal' : 
+                         diff.status === 'added' ? 'added' : 
+                         diff.status === 'removed' ? 'removed' : 'modified';
+        
+        // For removed lines, show original
+        if (diff.status === 'removed') {
+            lineCounter++;
+            let content = escapeHtml(diff.left);
+            if (syntaxHighlightEnabled && language) content = highlightCode(diff.left, language);
+            
+            html += `<div class="inline-diff-line ${lineClass}">`;
+            html += `<div class="line-num">${lineCounter}</div>`;
+            html += `<div class="inline-diff-content remove-marker">${content}</div>`;
+            html += '</div>';
+        }
+        // For added lines, show new
+        else if (diff.status === 'added') {
+            lineCounter++;
+            let content = escapeHtml(diff.right);
+            if (syntaxHighlightEnabled && language) content = highlightCode(diff.right, language);
+            
+            html += `<div class="inline-diff-line ${lineClass}">`;
+            html += `<div class="line-num">${lineCounter}</div>`;
+            html += `<div class="inline-diff-content add-marker">${content}</div>`;
+            html += '</div>';
+        }
+        // For modified lines, show both with highlighting
+        else if (diff.status === 'modified') {
+            // Show removed version
+            let leftContent = escapeHtml(diff.left);
+            if (charDiffEnabled) {
+                const charDiff = getCharDiff(diff.left, diff.right);
+                const rendered = renderCharDiff(charDiff);
+                if (rendered) leftContent = rendered.left;
+            }
+            if (syntaxHighlightEnabled && language) leftContent = highlightCode(diff.left, language);
+            
+            lineCounter++;
+            html += `<div class="inline-diff-line removed">`;
+            html += `<div class="line-num">${lineCounter}</div>`;
+            html += `<div class="inline-diff-content remove-marker">${leftContent}</div>`;
+            html += '</div>';
+            
+            // Show added version
+            let rightContent = escapeHtml(diff.right);
+            if (charDiffEnabled) {
+                const charDiff = getCharDiff(diff.left, diff.right);
+                const rendered = renderCharDiff(charDiff);
+                if (rendered) rightContent = rendered.right;
+            }
+            if (syntaxHighlightEnabled && language) rightContent = highlightCode(diff.right, language);
+            
+            html += `<div class="inline-diff-line added">`;
+            html += `<div class="line-num">${lineCounter}</div>`;
+            html += `<div class="inline-diff-content add-marker">${rightContent}</div>`;
+            html += '</div>';
+        }
+        // For equal lines, just show once
+        else {
+            lineCounter++;
+            let content = escapeHtml(diff.left);
+            if (syntaxHighlightEnabled && language) content = highlightCode(diff.left, language);
+            
+            html += `<div class="inline-diff-line ${lineClass}">`;
+            html += `<div class="line-num">${lineCounter}</div>`;
+            html += `<div class="inline-diff-content">${content}</div>`;
+            html += '</div>';
+        }
+    });
+    
+    container.innerHTML = html;
+}
+
 function process() {
     const leftInput = document.getElementById('leftInput');
     const rightInput = document.getElementById('rightInput');
@@ -127,8 +281,12 @@ function process() {
     // Calculate diff
     const diff = calculateDiff(leftContent, rightContent);
     
-    // Display results
+    // Display results in both views
     displayDiff(diff, diffOutput);
+    const inlineDiffOutput = document.getElementById('inlineDiffOutput');
+    if (inlineDiffOutput) {
+        displayInlineDiff(diff, inlineDiffOutput);
+    }
     displayStats(diff, resultDiv);
     
     // Update URL hash for sharing
@@ -553,6 +711,12 @@ function handleFileUpload(event, side) {
     };
     reader.readAsText(file);
 }
+
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+        e.preventDefault();
+        const newMode = currentViewMode === 'side' ? 'inline' : 'side';
+        toggleDiffView(newMode);
+    }
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {

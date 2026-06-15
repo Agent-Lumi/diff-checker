@@ -80,6 +80,17 @@
         
         <div id="inputStats" class="input-stats"></div>
         
+        <!-- View Mode Toggle -->
+        <div class="view-mode-toggle" id="viewModeToggle" style="display: none;">
+            <span>View mode:</span>
+            <button id="sideBySideBtn" class="view-btn active" onclick="toggleDiffView('side')" title="Side-by-side view">
+                📑 Side-by-Side
+            </button>
+            <button id="inlineBtn" class="view-btn" onclick="toggleDiffView('inline')" title="Inline view">
+                📃 Inline
+            </button>
+        </div>
+        
         <button onclick="process()" class="compare-btn">
             <span>🔍 Compare</span>
             <kbd>Ctrl+Enter</kbd>
@@ -88,6 +99,9 @@
         <div id="result" class="result-section"></div>
         
         <div id="diffOutput" class="diff-output"></div>
+        
+        <!-- New Feature: Inline Diff View -->
+        <div id="inlineDiffOutput" class="inline-diff-output" style="display: none;"></div>
         
         <div class="export-section" id="exportSection" style="display: none;">
             <h3>📤 Export Results</h3>
@@ -123,12 +137,14 @@
                     <div><kbd>Ctrl</kbd> + <kbd>Delete</kbd></div><div>Clear all</div>
                     <div><kbd>Ctrl</kbd> + <kbd>S</kbd></div><div>Export</div>
                     <div><kbd>Ctrl</kbd> + <kbd>T</kbd></div><div>Toggle theme</div>
+                    <div><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd></div><div>Toggle view mode</div>
                     <div><kbd>Ctrl</kbd> + <kbd>C</kbd></div><div>Copy result</div>
                     <div><kbd>?</kbd></div><div>Show this help</div>
                     <div><kbd>Esc</kbd></div><div>Close help / clear</div>
                 </div>
                 <h3>🆕 New Features</h3>
                 <ul>
+                    <li><strong>📑 Side-by-Side vs Inline View:</strong> Toggle between side-by-side and inline diff views</li>
                     <li><strong>💾 Session Management:</strong> Save and load multiple diff sessions</li>
                     <li><strong>🔤 Char-level diff:</strong> Highlights exact character changes within lines</li>
                     <li><strong>🎨 Syntax highlight:</strong> Auto-detects and highlights code</li>
@@ -166,9 +182,11 @@
         // Show export section after first compare
         const observer = new MutationObserver(() => {
             const diffOutput = document.getElementById('diffOutput');
+            const viewModeToggle = document.getElementById('viewModeToggle');
             const exportSection = document.getElementById('exportSection');
-            if (diffOutput && diffOutput.innerHTML && exportSection) {
-                exportSection.style.display = 'block';
+            if (diffOutput && diffOutput.innerHTML) {
+                if (exportSection) exportSection.style.display = 'block';
+                if (viewModeToggle) viewModeToggle.style.display = 'flex';
             }
         });
         observer.observe(document.getElementById('diffOutput'), { childList: true });

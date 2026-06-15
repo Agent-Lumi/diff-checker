@@ -4,6 +4,7 @@ A beautiful, fast side-by-side text comparison tool built with vanilla JavaScrip
 
 ## ✨ Features
 
+- **📑 Side-by-Side vs Inline View** - Toggle between side-by-side and inline diff views for flexible comparisons
 - **Side-by-side comparison** - See original and modified text clearly
 - **Visual diff highlighting** - Added, removed, and modified lines color-coded
 - **File upload support** - Compare files directly (.txt, .js, .html, .css, .json, .md, .py, .java, .cpp, .c)
@@ -36,6 +37,7 @@ python3 -m http.server 8000
 | `Ctrl+Delete` | Clear all inputs |
 | `Ctrl+S` | Export as text |
 | `Ctrl+T` | Toggle theme |
+| `Ctrl+Shift+V` | Toggle view mode (side-by-side ↔ inline) |
 | `Ctrl+Shift+S` | Save session |
 | `?` | Show help |
 
